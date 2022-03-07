@@ -194,7 +194,7 @@ pub struct Budget {
     budget_items: BudgetItems,
     #[serde(serialize_with = "serialize_array")]
     bonds: [i32; 50],
-    ordinance_flags: [u32; 20],
+    ordinance_flags: [u32; 32],
 }
 
 impl Budget {
@@ -209,7 +209,7 @@ impl Budget {
             .try_into()
             .expect("we should have 4 bytes");
 
-        let mut ordinance_flags = [u32::default(); 20];
+        let mut ordinance_flags = [u32::default(); 32];
 
         for (index, char) in int_to_bitstring(parse_uint32(ordinance_raw), 0)
             .chars()
