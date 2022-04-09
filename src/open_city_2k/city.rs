@@ -796,16 +796,20 @@ impl City {
                     mask if sc_util::parse_bitstring(mask) & left_corner != 0 => {
                         let new_building = Arc::new(Building::new(building_id, (row, col)));
 
-                        self.buildings.insert((row, col), new_building.clone());
-
                         // Certain highway pieces are 2x2 buildings, but should only be in networks.
-                        if NETWORK_IDS.contains(&building_id) {
-                            self.networks.insert((row, col), new_building.clone());
-                        } else {
-                            match self.tilelist.get_mut(&(row, col)) {
-                                Some(tile) => tile.set_building(new_building.clone()),
-                                None => warn!("WARNING: no tile at ({row}, {col})"),
+                        match &building_id {
+                            building_id if NETWORK_IDS.contains(&building_id) => {
+                                self.networks.insert((row, col), new_building.clone());
                             }
+
+                            _ => {
+                                self.buildings.insert((row, col), new_building.clone());
+                            }
+                        }
+
+                        match self.tilelist.get_mut(&(row, col)) {
+                            Some(tile) => tile.set_building(new_building.clone()),
+                            None => warn!("WARNING: no tile at ({row}, {col})"),
                         }
 
                         let building_size = buildings::get_size(&building_id)?;
