@@ -14,5 +14,5 @@ serde = { version = "1.0.137", features = ["derive", "rc"] }
 strum = "0.24.0"
 strum_macros = "0.24.0"
 gzp = "0.9.5"
-log = "0.4.16"
+log = "0.4.17"
 simplelog = "0.12.0"
