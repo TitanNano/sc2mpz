@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.60"
 clap = { version = "3.2.16", features = ["derive"] }
-phf = { version = "0.11.0", features = ["macros"] }
+phf = { version = "0.11.1", features = ["macros"] }
 rmp-serde = "1.1.0"
 serde = { version = "1.0.142", features = ["derive", "rc"] }
 strum = "0.24.1"
