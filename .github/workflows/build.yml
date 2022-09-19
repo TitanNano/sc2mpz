@@ -1,0 +1,64 @@
+name: Build Project
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
+        required: false
+
+jobs:
+  rust-build:
+    strategy:
+      matrix:
+        platform: ['linux', 'windows', 'darwin']
+        arch: ['x86_64', 'aarch64']
+        include:
+          - platform: linux
+            os: ubuntu-20.04
+            vendor: unknown
+            env: -gnu
+          - platform: windows
+            os: windows-2019
+            vendor: pc
+            env: '-msvc'
+          - platform: darwin
+            os: macos-11
+            vendor: apple
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      TARGET_TRIPLET: ${{ matrix.arch }}-${{ matrix.vendor }}-${{ matrix.platform }}${{ matrix.env }}
+      CARGO_BUILD: cargo build --target
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v3
+    - name: Set up clang64
+      if: contains(matrix.os, 'windows')
+      run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+    - name: Install arm gcc
+      if: contains(matrix.os, 'ubuntu') && contains(matrix.arch, 'aarch64')
+      run: sudo apt install gcc-aarch64-linux-gnu
+    - name: Add Build target
+      run: rustup target add ${{ env.TARGET_TRIPLET }}
+    - uses: Swatinem/rust-cache@v1
+      with:
+        key: ${{ matrix.arch }}
+    - name: Build Debug
+      if: ${{ !inputs.release }}
+      run: |
+        ${{ env.CARGO_BUILD}} ${{ env.TARGET_TRIPLET}}
+    - name: Build Release
+      if: inputs.release
+      run: |
+        ${{ env.CARGO_BUILD}} ${{ env.TARGET_TRIPLET}} --release
+    - name: Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+          name: sc2mpz-${{ matrix.platform }}-${{ matrix.arch }}
+          path: target/${{ env.TARGET_TRIPLET }}/${{ inputs.release && 'release' || 'debug' }}/sc2mpz
