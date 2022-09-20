@@ -1,11 +1,10 @@
-use super::serde::serialize_cord_hash_map;
 use serde::Serialize;
 use std::collections::HashMap;
 
 // Couldn't think of a better name, but this stores minimap info/simulation variables stores in:
 // XTRF, XPLT, XVAL, XCRM, XPLC, XFIR, XPOP, XROG.
 
-const X64: [&'static str; 4] = ["XTRF", "XPLT", "XVAL", "XCRM"];
+const X64: [&str; 4] = ["XTRF", "XPLT", "XVAL", "XCRM"];
 const X32: [&str; 4] = ["XPLC", "XFIR", "XPOP", "XROG"];
 
 #[derive(Clone, Debug, Serialize)]
@@ -53,16 +52,14 @@ impl Minimap {
 
 impl ToString for Minimap {
     fn to_string(&self) -> String {
-        let mut s = format!("{}:\n ", self.name);
+        [self.name.clone()]
+            .into_iter()
+            .chain((0..self.size).map(|_| {
+                let items: Vec<_> = (0..self.size).into_iter().map(|y| y.to_string()).collect();
 
-        for _ in 0..self.size {
-            for y in 0..self.size {
-                s += &format!("{} ", y);
-            }
-
-            s += "\n";
-        }
-
-        s
+                items.join("")
+            }))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 }

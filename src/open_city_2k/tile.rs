@@ -41,6 +41,7 @@ pub struct Tile {
 }
 
 impl Tile {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         traffic: Arc<Minimap>,
         pollution: Arc<Minimap>,
@@ -212,7 +213,6 @@ impl Tile {
 
 impl ToString for Tile {
     fn to_string(&self) -> String {
-        let mut s = format!("Tile at {:?}\n", self.coordinates);
         let terr = int_to_bitstring(self.terrain as u32, 0);
         let b_id = if let Some(building) = &self.building {
             format!("{:#04x}", building.building_id)
@@ -221,28 +221,44 @@ impl ToString for Tile {
         };
 
         let sign_text = if self.text_pointer > -1 {
-            format!(", Sign: \"{}\"", self.get_text())
+            format!(", Sign: {:?}", self.get_text())
         } else {
             String::from("")
         };
 
-        s += &format!(
-            "Altitude:\n\ttunnel: {}, water: {}, unknown: {}, altitude: {}\n",
-            self.altitude_tunnel, self.is_water, self.altitude_unknown, self.altitude
-        );
-        s += &format!("Terrain: {}\n", terr);
-        // City stuff
-        s += &format!(
-            "Buildings:\n\tid: {}, corners {}, zone: {}, underground: {}\n",
-            b_id, self.zone_corners, self.zone, self.underground
-        );
-        // text/signs
-        s += &format!("Text pointer: {}{}\n", self.text_pointer, sign_text);
-        // bit flags
-        s += &format!("Flags: {:?}\n", self.bit_flags);
-        // minimaps/simulation stuff
-        s += &format!("Minimap:\n\tTraffic: {:?}, pollution: {:?}, value: {:?}, crime: {:?}, police: {:?}, fire: {:?}, density: {:?}, growth: {:?}.", self.get_traffic(), self.get_pollution(), self.get_value(), self.get_crime(), self.get_police(), self.get_fire(), self.get_density(), self.get_growth());
-
-        s
+        format!(
+            r#"Tile at {:?}
+Altitude:
+    tunnel: {}, water: {}, unknown: {}, altitude: {}
+Terrain: {}
+Buildings:
+    id: {}, corners {}, zone: {}, underground: {}
+Text pointer: {}{}
+Flags: {:?}
+Minimap:
+    Traffic: {:?}, pollution: {:?}, value: {:?}, crime: {:?}, police: {:?}, fire: {:?}, density: {:?}, growth: {:?}
+"#,
+            self.coordinates,
+            self.altitude_tunnel,
+            self.is_water,
+            self.altitude_unknown,
+            self.altitude,
+            terr,
+            b_id,
+            self.zone_corners,
+            self.zone,
+            self.underground,
+            self.text_pointer,
+            sign_text,
+            self.bit_flags,
+            self.get_traffic(),
+            self.get_pollution(),
+            self.get_value(),
+            self.get_crime(),
+            self.get_police(),
+            self.get_fire(),
+            self.get_density(),
+            self.get_growth()
+        )
     }
 }

@@ -1,27 +1,28 @@
+use std::cmp::min;
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::Arc;
+
+use anyhow::Result;
+use log::{debug, error, info, warn};
+use phf::phf_map;
+use serde::Serialize;
+
 use super::bit_flags::BitFlags;
 use super::budget::Budget;
 use super::building::Building;
 use super::buildings;
+use super::buildings::GROUNDCOVER_IDS;
+use super::buildings::HIGHWAY_2X2_IDS;
+use super::buildings::NETWORK_IDS;
 use super::graph::Graph;
 use super::indexed_write::IndexedWrite;
 use super::minimap::Minimap;
 use super::sc2_iff_parse as sc2p;
 use super::sc2_iff_parse::ChunkList;
 use super::sc_util;
-// use super::serde::serialize_cord_hash_map;
-use super::buildings::GROUNDCOVER_IDS;
-use super::buildings::HIGHWAY_2X2_IDS;
-use super::buildings::NETWORK_IDS;
 use super::thing::Thing;
 use super::tile::Tile;
-use anyhow::Result;
-use log::{debug, error, info, warn};
-use phf::phf_map;
-use serde::Serialize;
-use std::cmp::min;
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Arc;
 
 // constants
 const GRAPH_WINDOW_GRAPHS: [&str; 16] = [
@@ -232,14 +233,9 @@ pub struct City {
     city_name: String,
     labels: Vec<String>,
     microsim_state: Vec<Box<[u8]>>,
-    //    graph_data: Dictionary,
-    //    #[serde(serialize_with = "serialize_cord_hash_map")]
     tilelist: HashMap<(usize, usize), Tile>,
-    //    #[serde(serialize_with = "serialize_cord_hash_map")]
     buildings: HashMap<(usize, usize), Arc<Building>>,
-    //    #[serde(serialize_with = "serialize_cord_hash_map")]
     networks: HashMap<(usize, usize), Arc<Building>>,
-    //    #[serde(serialize_with = "serialize_cord_hash_map")]
     groundcover: HashMap<(usize, usize), Arc<Building>>,
     things: Vec<Thing>,
     city_size: usize,
@@ -320,7 +316,7 @@ impl City {
     /**
      * Creates the 8 minimaps.
      * Args:
-     *		raw_sc2_data (bytes): Uncompressed .sc2 file.
+     *      raw_sc2_data (bytes): Uncompressed .sc2 file.
      */
     fn create_minimaps(&mut self, raw_sc2_data: &ChunkList) {
         info!("parsing minimaps...");
@@ -460,7 +456,7 @@ impl City {
     /**
      * Stores information about a tile.
      * Args:
-     * 		raw_sc2_data (bytes): Uncompressed .sc2 file.
+     *      raw_sc2_data (bytes): Uncompressed .sc2 file.
      */
     fn create_tilelist(&mut self, raw_sc2_data: &ChunkList) {
         info!("parsing city terrain tiles...");
@@ -554,7 +550,7 @@ impl City {
      * Parses the label data.
      * Todo: Make handling of "special" labels easier.
      * Args:
-     * 		xlab_segment (bytes): XLAB sgement of the raw .sc2 file.
+     *      xlab_segment (bytes): XLAB sgement of the raw .sc2 file.
      */
     fn parse_labels(&mut self, xlab_segment: &[u8]) {
         info!("parsing labels...");
@@ -581,7 +577,7 @@ impl City {
      * Parses the label data.
      * Note that this is incomplete and contains the raw bytes presently.
      * Args:
-     * 		xmic_segment (bytes): XMIC sgement of the raw .sc2 file.
+     *      xmic_segment (bytes): XMIC sgement of the raw .sc2 file.
      */
     fn parse_microsim(&mut self, xmic_segment: &[u8]) {
         info!("parsing micro simulation data...");
@@ -600,7 +596,7 @@ impl City {
      * Parses the XTHG segment.
      * Note: incompolete as XTHG segment spec not fully known.
      * Args:
-     * 		xthg_segments (bytes): Raw bytes representing the segment.
+     *      xthg_segments (bytes): Raw bytes representing the segment.
      */
     fn parse_things(&mut self, xthg_segments: &[u8]) {
         info!("parsing things...");
@@ -621,7 +617,7 @@ impl City {
     /**
      * Parses the various graphs.
      * Args:
-     *		xgrp_segment (bytes): Raw graph data to parse
+     *      xgrp_segment (bytes): Raw graph data to parse
      */
     fn parse_graphs(&mut self, xgrp_segment: &[u8]) {
         info!("parsing graphs...");
@@ -658,7 +654,7 @@ impl City {
 
         for entry in raw_text {
             let string_id = u32::from_be_bytes(entry[0..4].try_into().expect("should be 4 bytes"));
-            let raw_string = String::from_utf8_lossy(&entry[4..entry.len()]).replace("\r", "\n");
+            let raw_string = String::from_utf8_lossy(&entry[4..entry.len()]).replace('\r', "\n");
 
             if string_id == 0x80000000 {
                 self.scenario_text = raw_string
@@ -762,13 +758,13 @@ impl City {
     /**
      * Finds all of the buildings in a city file and creates a dict populated with Building objects with the keys being the x, y coordinates of the left corner.
      * Building generation algorighm:
-     * 		Scan for buildings by looking for their left corner. Why do it this way, which is obviously fragile? Because that's the way the original game did it, and this is attempting to replicate how the original game behaves.
-     * 		Once a building is found, look it up in XBLD to determine its size.
-     * 		Look for holes (from the magic eraser or other bugs in this building).
-     * 		Todo: find building either missing the left corner (rotation) or otherwise "broken" but still supported by the game.
-     * 		Buildings are stored as a dictionary, where a tile's xy coordinates are the key. Each tile of a building will point back to the same builiding object. This handles holes in the building.
+     *      Scan for buildings by looking for their left corner. Why do it this way, which is obviously fragile? Because that's the way the original game did it, and this is attempting to replicate how the original game behaves.
+     *      Once a building is found, look it up in XBLD to determine its size.
+     *      Look for holes (from the magic eraser or other bugs in this building).
+     *      Todo: find building either missing the left corner (rotation) or otherwise "broken" but still supported by the game.
+     *      Buildings are stored as a dictionary, where a tile's xy coordinates are the key. Each tile of a building will point back to the same builiding object. This handles holes in the building.
      * Args:
-     * 		raw_sc2_data: Raw data for the city.
+     *      raw_sc2_data: Raw data for the city.
      */
     fn find_buildings(&mut self, raw_sc2_data: &ChunkList) -> Result<()> {
         info!("parsing city buildings...");
@@ -797,7 +793,7 @@ impl City {
                         let new_building = Arc::new(Building::new(building_id, (row, col)));
 
                         // Certain highway pieces are 2x2 buildings, but should only be in networks.
-                        match &building_id {
+                        match building_id {
                             building_id if NETWORK_IDS.contains(&building_id) => {
                                 self.networks.insert((row, col), new_building.clone());
                             }
@@ -908,11 +904,11 @@ impl City {
     /**
      * Populates a city object from a .sc2 file.
      * Args:
-     * 		city_path: Path
+     *      city_path: Path
      * Returns:
-     * 		Nothing, used to populate a city object from a file.
+     *      Nothing, used to populate a city object from a file.
      */
-    pub fn create_city_from_file(city_path: &PathBuf) -> Result<Self> {
+    pub fn create_city_from_file(city_path: &Path) -> Result<Self> {
         let uncompressed_city = Self::open_and_uncompress_sc2_file(city_path)?;
         let mut city = Self::new();
 
@@ -932,9 +928,9 @@ impl City {
         city.parse_graphs(uncompressed_city.xgrp());
 
         // Check for scenario.
-        if uncompressed_city.text().len() == 0
-            || uncompressed_city.scen().len() == 0
-            || uncompressed_city.pict().len() == 0
+        if uncompressed_city.text().is_empty()
+            || uncompressed_city.scen().is_empty()
+            || uncompressed_city.pict().is_empty()
         {
             return Ok(city);
         }
@@ -948,13 +944,13 @@ impl City {
      * Truncates to 31 characters and coverts to all caps (as per original SC2k behaviour).
      * If the file is old enough and is missing a CNAM section, generates one using the same method.
      * Args:
-     * 		uncompressed_data: Uncompressed city data.
+     *      uncompressed_data: Uncompressed city data.
      */
     fn name_city(&mut self, uncompressed_data: &ChunkList) {
-        let mut city_name = sc2p::clean_city_name(&uncompressed_data.cnam());
+        let mut city_name = sc2p::clean_city_name(uncompressed_data.cnam());
 
-        if city_name.len() == 0 {
-            let mut file_name: Vec<&str> = self.original_filename.split(".").collect();
+        if city_name.is_empty() {
+            let mut file_name: Vec<&str> = self.original_filename.split('.').collect();
 
             file_name.truncate(file_name.len() - 1);
 
@@ -968,12 +964,12 @@ impl City {
     /**
      * Handles opening and decompression of a city file.
      * Args:
-     * 		city_file_path: Path to the city file to be opened.
+     *      city_file_path: Path to the city file to be opened.
      * Returns:
-     * 		Uncompressed city data ready for parsing into something more usable.
-     * 		This takes the form of a dictionary with the keys being the 4-letter chunk headers from the sc2 IFF file, and the values being the uncompressed raw binary data in bytearray from.
+     *      Uncompressed city data ready for parsing into something more usable.
+     *      This takes the form of a dictionary with the keys being the 4-letter chunk headers from the sc2 IFF file, and the values being the uncompressed raw binary data in bytearray from.
      */
-    fn open_and_uncompress_sc2_file(city_file_path: &PathBuf) -> Result<ChunkList> {
+    fn open_and_uncompress_sc2_file(city_file_path: &Path) -> Result<ChunkList> {
         info!("reading file from {}...", city_file_path.to_string_lossy());
         let raw_sc2_file = sc_util::open_file(city_file_path);
         info!("reading city data chunks...");
@@ -988,14 +984,14 @@ impl City {
      * Parses the MISC section of the .sc2 file and populates the City object with its values.
      * See .sc2 file spec docs for more, at:
      * Args:
-     * 		misc_data (bytes): MISC segment of the raw data from the .sc2 file.
+     *      misc_data (bytes): MISC segment of the raw data from the .sc2 file.
      */
     fn parse_misc(&mut self, misc_data: &[u8]) {
         info!("parsing city meta data, game settings and simulation settings...");
         // This is the offset of the section that's being parsed from MISC.
         let parse_order = &MISC_PARSE_ORDER;
 
-        let handle_special: Vec<&str> = ([
+        let mut handle_special = ([
             "Population Graphs",
             "Industry Graphs",
             "Tile Counts",
@@ -1011,8 +1007,7 @@ impl City {
         .into_iter()
         .chain(SIMULATOR_SETTINGS_NAMES)
         .chain(GAME_SETTING_NAME)
-        .chain(INVENTION_NAMES)
-        .collect();
+        .chain(INVENTION_NAMES);
 
         // Parse misc and generate city attributes.
         for (k, v) in parse_order {
@@ -1129,7 +1124,7 @@ impl City {
 
                 "Extra" => {
                     for (idx, x) in (offset..4800).step_by(4).enumerate() {
-                        let key = String::from(format!("{v}|{idx}"));
+                        let key = format!("{v}|{idx}");
 
                         self.city_attributes.insert(
                             key,
@@ -1173,7 +1168,7 @@ impl City {
                     );
                 }
 
-                v if !handle_special.contains(&v) => {
+                v if !handle_special.any(|item| v == item) => {
                     let value = sc_util::parse_int32(
                         misc_data[offset..(offset + 4)]
                             .try_into()
@@ -1193,12 +1188,12 @@ impl City {
 
     /**
      * Args:
-     * 		keys (): list of keys? representing the data we want to parse.
-     * 		offset (int): Offset into MISC where the segment we want to uninterleave starts.
-     * 		length (int): Total length of the section.
-     * 		misc_data: Data from the MISC section that needs to be uninterlaved
+     *      keys (): list of keys? representing the data we want to parse.
+     *      offset (int): Offset into MISC where the segment we want to uninterleave starts.
+     *      length (int): Total length of the section.
+     *      misc_data: Data from the MISC section that needs to be uninterlaved
      * Returns:
-     * 		A dictionary with the key being .
+     *      A dictionary with the key being .
      */
     fn misc_uninterleave_data(
         keys: &[&str],
@@ -1213,16 +1208,13 @@ impl City {
             values.push(vec![]);
         }
 
-        let mut idx = 0;
-
-        for local_offset in (offset..(offset + length)).step_by(4) {
+        for (idx, local_offset) in (offset..(offset + length)).step_by(4).enumerate() {
             let data = sc_util::parse_int32(
                 misc_data[local_offset..(local_offset + 4)]
                     .try_into()
                     .expect("should be 4 bytes"),
             );
             values[idx % num_keys].push(data);
-            idx += 1;
         }
 
         let mut output = HashMap::<String, Vec<i32>>::new();

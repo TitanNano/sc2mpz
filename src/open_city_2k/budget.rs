@@ -97,25 +97,25 @@ enum SubBudgetIndices {
     Tunnel,
 }
 
-impl Into<u16> for SubBudgetIndices {
-    fn into(self) -> u16 {
-        match self {
-            Self::Residential => 0x077C,
-            Self::Commercial => 0x07E8,
-            Self::Industrial => 0x0854,
-            Self::Ordinances => 0x08C0,
-            Self::Bonds => 0x092C,
-            Self::Police => 0x0998,
-            Self::Fire => 0x0A04,
-            Self::Health => 0x0A70,
-            Self::Schools => 0x0ADC,
-            Self::Colleges => 0x0B48,
-            Self::Road => 0x0BB4,
-            Self::Hiway => 0x0C20,
-            Self::Bridge => 0x0C8C,
-            Self::Rail => 0x0CF8,
-            Self::Subway => 0x0D64,
-            Self::Tunnel => 0x0DD0,
+impl From<SubBudgetIndices> for u16 {
+    fn from(value: SubBudgetIndices) -> u16 {
+        match value {
+            SubBudgetIndices::Residential => 0x077C,
+            SubBudgetIndices::Commercial => 0x07E8,
+            SubBudgetIndices::Industrial => 0x0854,
+            SubBudgetIndices::Ordinances => 0x08C0,
+            SubBudgetIndices::Bonds => 0x092C,
+            SubBudgetIndices::Police => 0x0998,
+            SubBudgetIndices::Fire => 0x0A04,
+            SubBudgetIndices::Health => 0x0A70,
+            SubBudgetIndices::Schools => 0x0ADC,
+            SubBudgetIndices::Colleges => 0x0B48,
+            SubBudgetIndices::Road => 0x0BB4,
+            SubBudgetIndices::Hiway => 0x0C20,
+            SubBudgetIndices::Bridge => 0x0C8C,
+            SubBudgetIndices::Rail => 0x0CF8,
+            SubBudgetIndices::Subway => 0x0D64,
+            SubBudgetIndices::Tunnel => 0x0DD0,
         }
     }
 }
@@ -201,7 +201,7 @@ impl Budget {
     /**
      * Parses the budget data segment from MISC into budget data.
      * Args:
-     * 		raw_misc_data (bytes): Raw segment from Misc
+     *      raw_misc_data (bytes): Raw segment from Misc
      */
     pub fn from_misc_data(raw_misc_data: &[u8]) -> Self {
         // Ordinances
@@ -242,8 +242,8 @@ impl Budget {
             let chunk_data = bytes_to_int32s(chunk);
             let mut sub_budget_writer = IndexedWriter::new(sub_budget);
 
-            for idx in 0..SubBudget::field_len() {
-                sub_budget_writer.set_next(chunk_data[idx] as usize);
+            for item in chunk_data.iter().take(SubBudget::field_len()) {
+                sub_budget_writer.set_next(*item as usize);
             }
         }
 

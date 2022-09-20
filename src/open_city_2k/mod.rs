@@ -8,7 +8,6 @@ mod indexed_write;
 mod minimap;
 mod sc2_iff_parse;
 mod sc_util;
-mod serde;
 mod thing;
 mod tile;
 

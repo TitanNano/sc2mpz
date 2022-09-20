@@ -11,15 +11,19 @@ pub struct Building {
 
 impl Building {
     pub fn new(building_id: u8, coords: (usize, usize)) -> Self {
-        let name = buildings::get_name(&building_id).expect(&format!(
-            "trying to create bulding with invalid id {:#04x}",
-            building_id
-        ));
+        let name = buildings::get_name(&building_id).unwrap_or_else(|_| {
+            panic!(
+                "trying to create bulding with invalid id {:#04x}",
+                building_id
+            )
+        });
 
-        let size = buildings::get_size(&building_id).expect(&format!(
-            "trying to create bulding with invalid id {:#04x}",
-            building_id
-        ));
+        let size = buildings::get_size(&building_id).unwrap_or_else(|_| {
+            panic!(
+                "trying to create bulding with invalid id {:#04x}",
+                building_id
+            )
+        });
 
         let tile_coords = coords;
 

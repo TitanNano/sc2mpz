@@ -54,7 +54,7 @@ fn get_target_filename(path: &Path) -> String {
     format!(
         "{}.mpz",
         path.file_name()
-            .unwrap_or(OsStr::new("city.sc2"))
+            .unwrap_or_else(|| OsStr::new("city.sc2"))
             .to_string_lossy()
     )
 }

@@ -15,7 +15,7 @@ impl Thing {
     /**
      * Parses raw bytes into a thing.
      * Args:
-     * 		raw_thing (bytes):  12 bytes representing the thing.
+     *      raw_thing (bytes):  12 bytes representing the thing.
      */
     pub fn parse_thing(raw_thing: &[u8; 12]) -> Self {
         let thing_id = raw_thing[0] as usize;

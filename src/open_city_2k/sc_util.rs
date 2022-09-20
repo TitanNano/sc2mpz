@@ -1,12 +1,14 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+
+use anyhow::Context;
 /**
  * Parses 4 bytes into a big endian unsigned integer.
  * Args:
- * 		unparsed_bytes (bytes): 4 bytes representing the int.
+ *      unparsed_bytes (bytes): 4 bytes representing the int.
  * Returns:
- * 		Integer representation.
+ *      Integer representation.
  */
 pub fn parse_uint32(unparsed_bytes: &[u8; 4]) -> u32 {
     assert!(unparsed_bytes.len() == 4);
@@ -16,9 +18,9 @@ pub fn parse_uint32(unparsed_bytes: &[u8; 4]) -> u32 {
 
 /** Parses 2 bytes into a big endian unsigned integer.
  * Args:
- * 		unparsed_bytes (bytes): 2 bytes representing the int.
+ *      unparsed_bytes (bytes): 2 bytes representing the int.
  * Returns:
- * 		Integer representation.
+ *      Integer representation.
  */
 pub fn parse_uint16(unparsed_bytes: &[u8; 2]) -> u16 {
     assert!(unparsed_bytes.len() == 2);
@@ -32,9 +34,9 @@ pub fn parse_uint16(unparsed_bytes: &[u8; 2]) -> u16 {
 
 /** Parses 1 byte into a big endian signed integer.
  * Args:
- * 		unparsed_bytes (bytes): 1 bytes representing the int.
+ *      unparsed_bytes (bytes): 1 bytes representing the int.
  * Returns:
- * 		Integer representation.
+ *      Integer representation.
  */
 pub fn parse_uint8(unparsed_bytes: &[u8; 1]) -> u8 {
     assert!(unparsed_bytes.len() == 1);
@@ -44,25 +46,21 @@ pub fn parse_uint8(unparsed_bytes: &[u8; 1]) -> u8 {
 
 /** Parses 4 bytes into a big endian signed integer.
  * Args:
- * 		unparsed_bytes (bytes):  4 bytes representing the int.
+ *      unparsed_bytes (bytes):  4 bytes representing the int.
  * Returns:
- * 		Integer representation.
+ *      Integer representation.
  */
 pub fn parse_int32(unparsed_bytes: &[u8; 4]) -> i32 {
-    assert!(unparsed_bytes.len() == 4);
-
-    let result = i32::from_be_bytes(*unparsed_bytes);
-
-    result
+    i32::from_be_bytes(*unparsed_bytes)
 }
 
 /** Converts an int into its binary representation as a string of 0s and 1s.
  * Optionally takes an argument for the length to pad to.
  * Args:
- * 		int_input (int): integer to convert.
- * 		pad (int): Pad with 0s to this length.
+ *      int_input (int): integer to convert.
+ *      pad (int): Pad with 0s to this length.
  * Returns:
- * 		String representation of the input integer in binary.
+ *      String representation of the input integer in binary.
  */
 pub fn int_to_bitstring(int: u32, pad: usize) -> String {
     let mut result = String::from("");
@@ -72,7 +70,7 @@ pub fn int_to_bitstring(int: u32, pad: usize) -> String {
         let bit = int_input & 1;
 
         result = bit.to_string() + &result;
-        int_input = int_input >> 1;
+        int_input >>= 1;
     }
 
     while result.len() < pad {
@@ -100,15 +98,19 @@ pub fn parse_bitstring(bit_string: &str) -> u32 {
 
 /** Convenience function that opens a file and returns its binary contents.
  * Args:
- * 		input_file (path): full path of a file to open.
+ *      input_file (path): full path of a file to open.
  * Returns:
- * 		Raw binary contents of the input file.
+ *      Raw binary contents of the input file.
  */
 pub fn open_file(input_file: &Path) -> Vec<u8> {
-    let mut f = File::open(&input_file).expect(&format!(
-        "file path {} does not exists or can't be opened!",
-        input_file.to_str().unwrap_or_default()
-    ));
+    let mut f = File::open(&input_file)
+        .with_context(|| {
+            format!(
+                "file path {} does not exists or can't be opened!",
+                input_file.to_str().unwrap_or_default()
+            )
+        })
+        .unwrap_or_else(|err| panic!("{:?}", err));
 
     let mut buffer = vec![];
 
@@ -120,9 +122,9 @@ pub fn open_file(input_file: &Path) -> Vec<u8> {
 
 /** Turns a sequence of bytes (must be a multiple of 4) into a list of integers.
  * Args:
- * 		input_bytes (bytes): bytes to convert
+ *      input_bytes (bytes): bytes to convert
  * Returns:
- * 		List of converted signed integers.
+ *      List of converted signed integers.
  */
 pub fn bytes_to_int32s(input_bytes: &[u8]) -> Vec<i32> {
     let mut res: Vec<i32> = vec![];
