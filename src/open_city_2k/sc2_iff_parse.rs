@@ -234,24 +234,16 @@ impl Iterator for CompressedIterator {
 /**
  * Get's the city's name, if it exists. Sometimes CNAM contains garbage, so this also cleans that up.
  * Args:
- * 		dirty_name (bytes): City's name, possible with garbage in it.
+ *      dirty_name (bytes): City's name, possible with garbage in it.
  * Returns:
- * 		A string of the name, with garbage removed.
+ *      A string of the name, with garbage removed.
  */
 pub fn clean_city_name(dirty_name: &[u8]) -> String {
-    let mut clean_name = String::new();
-
-    for x in &dirty_name[1..32] {
-        if x == &0x00 {
-            break;
-        }
-
-        let char: char = x.to_owned().into();
-
-        clean_name.push(char);
-    }
-
-    return clean_name;
+    dirty_name[1..32]
+        .iter()
+        .filter(|x| x != &&0x00u8)
+        .map(|x| char::from(x.to_owned()))
+        .collect()
 }
 
 // Functions to handle decompression and compression of the actual city information.
@@ -259,12 +251,12 @@ pub fn clean_city_name(dirty_name: &[u8]) -> String {
 /**
  * Takes already uncompressed city data and converts it into chunks.
  * Args:
- * 		input_file (bytes): raw uncompressed city data.
- * 		input_type (str): type of the input file we're opening.
+ *      input_file (bytes): raw uncompressed city data.
+ *      input_type (str): type of the input file we're opening.
  * Returns:
- * 		A dictionary of {chunk id: chunk data} form, one entry per chunk.
+ *      A dictionary of {chunk id: chunk data} form, one entry per chunk.
  * Raises:
- * 		SC2Parse: re-raised errors from check_file()
+ *      SC2Parse: re-raised errors from check_file()
  */
 pub fn chunk_input_serial(input_file: &[u8], input_type: &str) -> Result<ChunkList> {
     let mut output_dict = ChunkList::default();
@@ -275,7 +267,7 @@ pub fn chunk_input_serial(input_file: &[u8], input_type: &str) -> Result<ChunkLi
     // -12B for the header
     let mut remaining_length = file_length - 12;
 
-    if output_dict.cnam.len() == 0 {
+    if output_dict.cnam.is_empty() {
         if let Some(city_name) = header.city_name {
             output_dict.cnam = city_name;
         }
@@ -303,14 +295,14 @@ pub fn chunk_input_serial(input_file: &[u8], input_type: &str) -> Result<ChunkLi
  * Untested with some of the weirder versions of SC2k, such as Amiga, PocketPC/Windows Mobile, etc.
  * Currently only supports parsing for FORM and MIFF files.
  * Args:
- * 		input_data (bytes): bytes containing the entirety of the city.
- * 		input_type (str): type of input file, supported are 'mif' for .mif tileset/MIFF file and 'sc2' for .sc2 city file.
+ *      input_data (bytes): bytes containing the entirety of the city.
+ *      input_type (str): type of input file, supported are 'mif' for .mif tileset/MIFF file and 'sc2' for .sc2 city file.
  * Returns:
- * 		A tuple containing a dictionary and the input.
- * 		The dictionary looks like {'type_id': header, 'data_size': reported_size, 'file_type': file_type} where the header is the opening 4 bytes of input as a bytestring, reported_size is an int of the size the file claims to be and file_type is one of b"SC2K" (tileset) of b"SCDH" (city).
+ *      A tuple containing a dictionary and the input.
+ *      The dictionary looks like {'type_id': header, 'data_size': reported_size, 'file_type': file_type} where the header is the opening 4 bytes of input as a bytestring, reported_size is an int of the size the file claims to be and file_type is one of b"SC2K" (tileset) of b"SCDH" (city).
  * Raises:
- * 		SC2Parse: an error relating to parsing .sc2 files. Could be caused by the file being a SimCity classic city (currently an unsupported format), not a city file at all, or being corrupted.
- * 		MIFFParse: an error relating to parsing .mif files. Could be caused by file corruption of not actually being a tileset file.
+ *      SC2Parse: an error relating to parsing .sc2 files. Could be caused by the file being a SimCity classic city (currently an unsupported format), not a city file at all, or being corrupted.
+ *      MIFFParse: an error relating to parsing .mif files. Could be caused by file corruption of not actually being a tileset file.
  */
 fn check_file<'a>(input_data: &'a [u8], input_type: &str) -> Result<(Sc2FileHeader, &'a [u8])> {
     let mut city_name: Option<Vec<u8>> = None;
@@ -361,7 +353,7 @@ fn check_file<'a>(input_data: &'a [u8], input_type: &str) -> Result<(Sc2FileHead
 
                 // Check and see if this is a Simcity Classic city.
                 let error = if data_match && header_match {
-                    format!("Simcity Classic city files are not supported.")
+                    String::from("Simcity Classic city files are not supported.")
                 } else {
                     format!("Not a FORM type IFF file, claiming: {}", header_string)
                 };
@@ -411,12 +403,12 @@ fn check_file<'a>(input_data: &'a [u8], input_type: &str) -> Result<(Sc2FileHead
  * Parses an IFF chunk by reading the header and using the size to determine which bytes belong to it.
  * An IFF chunk has an 8 byte header, of which the first 4 bytes is the type and the second 4 bytes is the size (exclusive of the header).
  * Args:
- * 		input_data (bytes): raw city information.
- * 		offset (int): starting offset in input to start parsing at.
+ *      input_data (bytes): raw city information.
+ *      offset (int): starting offset in input to start parsing at.
  * Returns:
- * 		A list containing the id of the chunk (a 4 byte ascii value), an int length of the chunk of finally bytes of the chunk data.
+ *      A list containing the id of the chunk (a 4 byte ascii value), an int length of the chunk of finally bytes of the chunk data.
  */
-fn get_chunk_from_offset<'a>(input_data: &'a [u8], offset: usize) -> (String, usize, &'a [u8]) {
+fn get_chunk_from_offset(input_data: &[u8], offset: usize) -> (String, usize, &[u8]) {
     let location_index = offset;
     let chunk_id =
         String::from_utf8_lossy(&input_data[location_index..location_index + 4]).into_owned();
@@ -436,9 +428,9 @@ fn get_chunk_from_offset<'a>(input_data: &'a [u8], offset: usize) -> (String, us
 /**
  * Checks if this is a Mac .sc2 file.
  * Args:
- * 		input_data (bytes): raw city information.
+ *      input_data (bytes): raw city information.
  * Returns:
- * 		True if this is a Mac formatted file, False if it isn't.
+ *      True if this is a Mac formatted file, False if it isn't.
  */
 fn mac_check(input_data: &[u8]) -> bool {
     let header = &input_data[0..4];
@@ -451,11 +443,11 @@ fn mac_check(input_data: &[u8]) -> bool {
  * Makes a Mac city file compatible with the Win95 version of the game.
  * Basically, we don't need the first 0x80 bytes from the Mac file, something about a resource fork. Also, some of the files have garbage data at the end, which is also trimmed.
  * Args:
- * 		input_data (bytes): raw city information.
+ *      input_data (bytes): raw city information.
  * Returns:
- * 		Bytes comprising a compatible SC2k Win95 city file from the Mac file, and the name of the city from the start of the file.
+ *      Bytes comprising a compatible SC2k Win95 city file from the Mac file, and the name of the city from the start of the file.
  */
-fn mac_fix<'a>(input_data: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+fn mac_fix(input_data: &[u8]) -> (&[u8], &[u8]) {
     let reported_size = (sc_util::parse_int32(
         input_data[0x84..0x88]
             .try_into()
@@ -472,10 +464,10 @@ fn mac_fix<'a>(input_data: &'a [u8]) -> (&'a [u8], &'a [u8]) {
  * Uncompresses a compressed .mif or .sc2 file.
  * For a .sc2 file, doesn't uncompress chunks with id of CNAM or ALTM and for .mif, soesn't uncompress TILE chunks.
  * Args:
- * 		input_file (bytes): compressed city data.
- * 		input_type (str): type of the input file we're opening.
+ *      input_file (bytes): compressed city data.
+ *      input_type (str): type of the input file we're opening.
  * Returns:
- * 		A dictionary of uncompressed {chunk id: chunk data} form, one entry per chunk.
+ *      A dictionary of uncompressed {chunk id: chunk data} form, one entry per chunk.
  */
 pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkList {
     let mut uncompressed_chunk_list = ChunkList::default();
@@ -518,9 +510,9 @@ pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkLis
 /**
  * Uncompresses the RLE compressed city data. For more information, consult the .sc2 file format specification documents at https://github.com/dfloer/SC2k-docs
  * Args:
- * 		encoded_data (bytes): raw city information.
+ *      encoded_data (bytes): raw city information.
  * Returns:
- * 		Uncompressed bytes.
+ *      Uncompressed bytes.
  */
 fn uncompress_rle(encoded_data: &[u8]) -> Vec<u8> {
     let mut decoded_data = vec![];
@@ -537,20 +529,15 @@ fn uncompress_rle(encoded_data: &[u8]) -> Vec<u8> {
             // In this case, byte-127=count of how many times the very next byte repeats.
             byte_count = byte - 0x7f;
             next_byte_repeat = true;
-        } else {
-            if byte_count > 0 && next_byte_repeat {
-                let mut repeat = vec![];
+        } else if byte_count > 0 && next_byte_repeat {
+            let mut repeated = Vec::with_capacity(byte_count as usize);
 
-                for _ in 0..byte_count {
-                    repeat.push(byte.to_owned());
-                }
-
-                decoded_data.append(&mut repeat);
-                byte_count = 0;
-            } else if byte_count > 0 && !next_byte_repeat {
-                decoded_data.push(byte.to_owned());
-                byte_count -= 1;
-            }
+            repeated.fill(*byte);
+            decoded_data.append(&mut repeated);
+            byte_count = 0;
+        } else if byte_count > 0 && !next_byte_repeat {
+            decoded_data.push(*byte);
+            byte_count -= 1;
         }
     }
 

@@ -1,21 +1,18 @@
 mod open_city_2k;
 
-use anyhow::Result;
-use clap::Parser;
-use open_city_2k::City;
-use rmp_serde::encode;
-// use serde_json::to_writer;
-use gzp::{
-    deflate::Gzip,
-    par::compress::{ParCompress, ParCompressBuilder},
-};
-use log::info;
-use simplelog::{
-    ColorChoice as LoggerColorChoice, Config as LoggerConfig, LevelFilter, TermLogger, TerminalMode,
-};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use anyhow::Result;
+use clap::Parser;
+use flate2::{write::ZlibEncoder, Compression};
+use log::info;
+use open_city_2k::City;
+use rmp_serde::encode;
+use simplelog::{
+    ColorChoice as LoggerColorChoice, Config as LoggerConfig, LevelFilter, TermLogger, TerminalMode,
+};
 
 #[derive(Parser, Debug)]
 #[clap(version, author, about)]
@@ -57,7 +54,7 @@ fn get_target_filename(path: &Path) -> String {
     format!(
         "{}.mpz",
         path.file_name()
-            .unwrap_or(OsStr::new("city.sc2"))
+            .unwrap_or_else(|| OsStr::new("city.sc2"))
             .to_string_lossy()
     )
 }
@@ -86,7 +83,7 @@ fn process_file(input: &PathBuf, output: Option<&PathBuf>) -> Result<()> {
     let city = City::create_city_from_file(&input)?;
     let out_file = fs::File::create(&output)?;
 
-    let mut compress: ParCompress<Gzip> = ParCompressBuilder::new().from_writer(out_file);
+    let mut compress = ZlibEncoder::new(out_file, Compression::best());
 
     info!("writing city to {}...", output.to_string_lossy());
     //to_writer(out_file, &city)?;

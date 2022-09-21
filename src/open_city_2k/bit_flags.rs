@@ -33,7 +33,7 @@ impl BitFlags {
     /**
      * Converts this bitflags to a bytes.
      * Returns:
-     * 		A single, big endian byte representation of the bitflags.
+     *      A single, big endian byte representation of the bitflags.
      */
     fn to_byte(&self) {
         unimplemented!("to_byte is not implemented!");

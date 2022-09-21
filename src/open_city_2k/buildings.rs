@@ -6,25 +6,25 @@ use std::ops::Range;
 /** Stores basic information about a tile.
  * If an attribute is not specified, it is assumed to not apply to the tile, or be False.
  * Tile attributes:
- * 		name: Nice name for the tile.
- * 		size: How big is the tile? Since all tiles are square, this is the dimension of the edge.
- * 		corners: Will this tile have corners set in XZON?
- * 		water: Does this tile need water? If so, it'll have pipes underneath it.
- * 		power: Does this tile consume power.
- * 		zone: What zone is this tile?
- * 			Possible Values are: residential, commercial, industrial, military, airport, seaport & special.
- * 			Note that this doesn't differentiate between density. This might change later, but only 1x1 buildings can form in low-density zones.
- * 		construction: Whether or not this tile is considered constuction. Handled differently if so.
- * 		abandoned: Whether or not this tils represents an abandoned building. Handled differently if it is.
- * 		power_generated: Does this tile generate power? Amount of power generated will be stored elsewhere to account for power plants that generate variable amounts of power. See Wind and Solar.
- * 		power_reported: Nominally, how much does this building supposedly produce (in MW). As reported in game.
- * 		water_produced: Does this building produce water? Amount stored in separate data structure.
- * 		cost: How much does it cost to plop this tile?
- * 		maintenance: How much does this building cost /year at 100% funding?
- * 		underground: What underground tile id should this tile have?
- * 			Note that if water = true, this is assumed to be the normal small pipes. Otherwise, use the special tile.
- * 		microsim: What microsim applies to this tile (if any?)
- * 			Possible Values: city_hall, hospital, police, fire, museum, park, school, stadium, prison, college, zoo, statue, library, bus, rail, wind, hydro, marina, subway, plymouth, forest, darco, launch, dome, mansion.
+ *      name: Nice name for the tile.
+ *      size: How big is the tile? Since all tiles are square, this is the dimension of the edge.
+ *      corners: Will this tile have corners set in XZON?
+ *      water: Does this tile need water? If so, it'll have pipes underneath it.
+ *      power: Does this tile consume power.
+ *      zone: What zone is this tile?
+ *          Possible Values are: residential, commercial, industrial, military, airport, seaport & special.
+ *          Note that this doesn't differentiate between density. This might change later, but only 1x1 buildings can form in low-density zones.
+ *      construction: Whether or not this tile is considered constuction. Handled differently if so.
+ *      abandoned: Whether or not this tils represents an abandoned building. Handled differently if it is.
+ *      power_generated: Does this tile generate power? Amount of power generated will be stored elsewhere to account for power plants that generate variable amounts of power. See Wind and Solar.
+ *      power_reported: Nominally, how much does this building supposedly produce (in MW). As reported in game.
+ *      water_produced: Does this building produce water? Amount stored in separate data structure.
+ *      cost: How much does it cost to plop this tile?
+ *      maintenance: How much does this building cost /year at 100% funding?
+ *      underground: What underground tile id should this tile have?
+ *          Note that if water = true, this is assumed to be the normal small pipes. Otherwise, use the special tile.
+ *      microsim: What microsim applies to this tile (if any?)
+ *          Possible Values: city_hall, hospital, police, fire, museum, park, school, stadium, prison, college, zoo, statue, library, bus, rail, wind, hydro, marina, subway, plymouth, forest, darco, launch, dome, mansion.
  */
 struct TileAttributes {
     name: &'static str,
@@ -4484,7 +4484,7 @@ pub const HIGHWAY_2X2_IDS: Range<u8> = 0x61..(0x6B + 1);
 pub fn train_tiles() -> Vec<u8> {
     TILE_DATA
         .entries()
-        .filter(|(k, v)| v.name.contains("Rail") && [108, 109, 110, 111, 237].contains(&k))
+        .filter(|(k, v)| v.name.contains("Rail") && [108, 109, 110, 111, 237].contains(k))
         .map(|(k, _)| *k)
         .collect()
 }
@@ -4494,9 +4494,9 @@ pub fn train_tiles() -> Vec<u8> {
 /**
  * Gets the size of a building given the building's ID.
  * Args:
- * 		building_id (int): id of the building.
+ *      building_id (int): id of the building.
  * Returns:
- * 		Either 1, 2, 3 or 4 depending on how large the building is.
+ *      Either 1, 2, 3 or 4 depending on how large the building is.
  */
 pub fn get_size(building_id: &u8) -> Result<usize> {
     match TILE_DATA.get(building_id) {
@@ -4508,13 +4508,13 @@ pub fn get_size(building_id: &u8) -> Result<usize> {
 /**
  * Gets the name of a building given the building's ID.
  * Args:
- * 		building_id (int): id of the building.
+ *      building_id (int): id of the building.
  * Returns:
- * 		String containing the building's name.
+ *      String containing the building's name.
  */
 pub fn get_name(building_id: &u8) -> Result<&'static str> {
     match &TILE_DATA.get(building_id) {
-        Some(building) => Ok(&building.name),
+        Some(building) => Ok(building.name),
         None => Err(anyhow!("invalid building id {:#04x}", building_id)),
     }
 }
