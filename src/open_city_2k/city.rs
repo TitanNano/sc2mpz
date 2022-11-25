@@ -716,7 +716,7 @@ impl City {
         let mut row_length: usize = 0;
         let mut row_count: usize = 0;
 
-        for (idx, byte) in (&picture[4..6]).iter().enumerate() {
+        for (idx, byte) in picture[4..6].iter().enumerate() {
             // x dimension of image.
             row_length |= (*byte as usize) << idx;
         }

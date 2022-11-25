@@ -103,7 +103,7 @@ pub fn parse_bitstring(bit_string: &str) -> u32 {
  *      Raw binary contents of the input file.
  */
 pub fn open_file(input_file: &Path) -> Vec<u8> {
-    let mut f = File::open(&input_file)
+    let mut f = File::open(input_file)
         .with_context(|| {
             format!(
                 "file path {} does not exists or can't be opened!",
