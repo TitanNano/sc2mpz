@@ -241,7 +241,7 @@ impl Iterator for CompressedIterator {
 pub fn clean_city_name(dirty_name: &[u8]) -> String {
     dirty_name[1..32]
         .iter()
-        .filter(|x| x != &&0x00u8)
+        .take_while(|x| **x != 0x00)
         .map(|x| char::from(x.to_owned()))
         .collect()
 }
@@ -472,6 +472,14 @@ fn mac_fix(input_data: &[u8]) -> (&[u8], &[u8]) {
 pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkList {
     let mut uncompressed_chunk_list = ChunkList::default();
 
+    log::debug!("cnam: {}", input_file.cnam.len());
+    log::debug!("misc: {}", input_file.misc.len());
+    log::debug!("altm: {}", input_file.altm.len());
+    log::debug!("xter: {}", input_file.xter.len());
+    log::debug!("xbld: {}", input_file.xbld.len());
+
+    log::debug!("uncompressing file data...");
+
     match input_type {
         "sc2" => {
             uncompressed_chunk_list.text = input_file.text.clone();
@@ -482,7 +490,11 @@ pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkLis
 
             input_file
                 .iter_compressed()
-                .map(|(key, slice)| (key, uncompress_rle(&slice)))
+                .map(|(key, slice)| {
+                    log::debug!("decompressing {}...", key);
+
+                    (key, uncompress_rle(&slice))
+                })
                 .for_each(|(key, value)| uncompressed_chunk_list.set(&key, &value));
         }
 
@@ -497,6 +509,12 @@ pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkLis
 
         _ => panic!("unknown input type: {}", input_type),
     }
+
+    log::debug!("cnam: {}", uncompressed_chunk_list.cnam.len(),);
+    log::debug!("misc: {}", uncompressed_chunk_list.misc.len(),);
+    log::debug!("altm: {}", uncompressed_chunk_list.altm.len(),);
+    log::debug!("xter: {}", uncompressed_chunk_list.xter.len(),);
+    log::debug!("xbld: {}", uncompressed_chunk_list.xbld.len(),);
 
     assert!(uncompressed_chunk_list.cnam.len() == 32);
     assert!(uncompressed_chunk_list.misc.len() == 4800);
@@ -521,23 +539,43 @@ fn uncompress_rle(encoded_data: &[u8]) -> Vec<u8> {
 
     // Data is stored in two forms: 0x01..0x7F and 0x81..0xFF
     for byte in encoded_data {
-        if byte < &0x80 && byte_count == 0 {
-            // In this case, byte is a count of the number of data bytes that follow.
-            byte_count = byte.to_owned();
-            next_byte_repeat = false;
-        } else if byte > &0x80 && byte_count == 0 {
-            // In this case, byte-127=count of how many times the very next byte repeats.
-            byte_count = byte - 0x7f;
-            next_byte_repeat = true;
-        } else if byte_count > 0 && next_byte_repeat {
-            let mut repeated = Vec::with_capacity(byte_count as usize);
+        match (byte, byte_count, next_byte_repeat) {
+            (0..=0x7F, 0, _) => {
+                // In this case, byte is a count of the number of data bytes that follow.
+                byte_count = byte.to_owned();
+                next_byte_repeat = false;
+                log::debug!("new byte count: {}", byte_count);
+            }
+            (0x80.., 0, _) => {
+                // In this case, byte-127=count of how many times the very next byte repeats.
+                byte_count = byte - 0x7f;
+                next_byte_repeat = true;
+                log::debug!("new byte repeat: {}", byte_count);
+            }
+            (0.., 1.., true) => {
+                let size = byte_count as usize;
+                let mut repeated = Vec::with_capacity(size);
 
-            repeated.fill(*byte);
-            decoded_data.append(&mut repeated);
-            byte_count = 0;
-        } else if byte_count > 0 && !next_byte_repeat {
-            decoded_data.push(*byte);
-            byte_count -= 1;
+                repeated.resize(size, *byte);
+                decoded_data.append(&mut repeated);
+                log::debug!(
+                    "repeated byte {:#04x} x {}. New Length {}",
+                    byte,
+                    byte_count,
+                    decoded_data.len()
+                );
+                byte_count = 0;
+            }
+            (0.., 1.., false) => {
+                decoded_data.push(*byte);
+                byte_count -= 1;
+                log::debug!(
+                    "appending byte {:#04x}, remaining bytes {}, New Length {}",
+                    byte,
+                    byte_count,
+                    decoded_data.len()
+                );
+            }
         }
     }
 

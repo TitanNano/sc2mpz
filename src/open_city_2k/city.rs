@@ -958,6 +958,7 @@ impl City {
         }
 
         self.city_name = city_name;
+        log::debug!("city name is {:?} before truncating", self.city_name);
         self.city_name.truncate(31);
     }
 
