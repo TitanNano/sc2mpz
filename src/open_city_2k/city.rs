@@ -8,6 +8,8 @@ use log::{debug, error, info, warn};
 use phf::phf_map;
 use serde::Serialize;
 
+use crate::open_city_2k::sc_util::int_to_bitstring;
+
 use super::bit_flags::BitFlags;
 use super::budget::Budget;
 use super::building::Building;
@@ -249,14 +251,14 @@ pub struct City {
     population_graphs: HashMap<String, Vec<i32>>,
     industry_graphs: HashMap<String, Vec<i32>>,
     simulator_settings: HashMap<String, i32>,
-    traffic: Arc<Minimap>,
-    pollution: Arc<Minimap>,
-    value: Arc<Minimap>,
-    crime: Arc<Minimap>,
-    police: Arc<Minimap>,
-    fire: Arc<Minimap>,
-    density: Arc<Minimap>,
-    growth: Arc<Minimap>,
+    pub(crate) traffic: Minimap,
+    pub(crate) pollution: Minimap,
+    pub(crate) value: Minimap,
+    pub(crate) crime: Minimap,
+    pub(crate) police: Minimap,
+    pub(crate) fire: Minimap,
+    pub(crate) density: Minimap,
+    pub(crate) growth: Minimap,
     is_scenario: bool,
     scenario_text: String,
     scenario_descriptive_text: String,
@@ -293,14 +295,14 @@ impl City {
             game_settings: HashMap::new(),
 
             // Minimaps
-            traffic: Arc::new(Minimap::new(String::from("traffic"), 64)),
-            pollution: Arc::new(Minimap::new(String::from("pollution"), 64)),
-            value: Arc::new(Minimap::new(String::from("value"), 64)),
-            crime: Arc::new(Minimap::new(String::from("crime"), 64)),
-            police: Arc::new(Minimap::new(String::from("police"), 32)),
-            fire: Arc::new(Minimap::new(String::from("fire"), 32)),
-            density: Arc::new(Minimap::new(String::from("density"), 32)),
-            growth: Arc::new(Minimap::new(String::from("growth"), 32)),
+            traffic: Minimap::new(String::from("traffic"), 64),
+            pollution: Minimap::new(String::from("pollution"), 64),
+            value: Minimap::new(String::from("value"), 64),
+            crime: Minimap::new(String::from("crime"), 64),
+            police: Minimap::new(String::from("police"), 32),
+            fire: Minimap::new(String::from("fire"), 32),
+            density: Minimap::new(String::from("density"), 32),
+            growth: Minimap::new(String::from("growth"), 32),
 
             // Optional Scenario stuff
             is_scenario: false,
@@ -342,37 +344,11 @@ impl City {
                     .try_into()
                     .expect("should be 1 byte");
 
-                self.traffic = {
-                    let mut traffic = (*self.traffic).clone();
-
-                    traffic.set_item(tile_key, sc_util::parse_uint8(xtrf));
-
-                    Arc::new(traffic)
-                };
-
-                self.pollution = {
-                    let mut pollution = (*self.traffic).clone();
-
-                    pollution.set_item(tile_key, sc_util::parse_uint8(xplt));
-
-                    Arc::new(pollution)
-                };
-
-                self.value = {
-                    let mut value = (*self.value).clone();
-
-                    value.set_item(tile_key, sc_util::parse_uint8(xval));
-
-                    Arc::new(value)
-                };
-
-                self.crime = {
-                    let mut crime = (*self.crime).clone();
-
-                    crime.set_item(tile_key, sc_util::parse_uint8(xcrm));
-
-                    Arc::new(crime)
-                };
+                self.traffic.set_item(tile_key, sc_util::parse_uint8(xtrf));
+                self.pollution
+                    .set_item(tile_key, sc_util::parse_uint8(xplt));
+                self.value.set_item(tile_key, sc_util::parse_uint8(xval));
+                self.crime.set_item(tile_key, sc_util::parse_uint8(xcrm));
 
                 debug!(
                     "{:?}: traffic: {}, pollution: {}, land value: {}, crime: {}",
@@ -409,37 +385,10 @@ impl City {
                     .try_into()
                     .expect("should be 1 byte");
 
-                self.police = {
-                    let mut police = (*self.police).clone();
-
-                    police.set_item(tile_key, sc_util::parse_uint8(xplc));
-
-                    Arc::new(police)
-                };
-
-                self.fire = {
-                    let mut fire = (*self.fire).clone();
-
-                    fire.set_item(tile_key, sc_util::parse_uint8(xfir));
-
-                    Arc::new(fire)
-                };
-
-                self.density = {
-                    let mut density = (*self.density).clone();
-
-                    density.set_item(tile_key, sc_util::parse_uint8(xpop));
-
-                    Arc::new(density)
-                };
-
-                self.growth = {
-                    let mut growth = (*self.growth).clone();
-
-                    growth.set_item(tile_key, sc_util::parse_uint8(xrog));
-
-                    Arc::new(growth)
-                };
+                self.police.set_item(tile_key, sc_util::parse_uint8(xplc));
+                self.fire.set_item(tile_key, sc_util::parse_uint8(xfir));
+                self.density.set_item(tile_key, sc_util::parse_uint8(xpop));
+                self.growth.set_item(tile_key, sc_util::parse_uint8(xrog));
 
                 debug!(
                     "{:?}: police: {}, fire: {}, densitye: {}, growth: {}",
@@ -463,17 +412,7 @@ impl City {
 
         for row in 0..self.city_size {
             for col in 0..self.city_size {
-                let mut tile = Tile::new(
-                    self.traffic.clone(),
-                    self.pollution.clone(),
-                    self.value.clone(),
-                    self.crime.clone(),
-                    self.police.clone(),
-                    self.fire.clone(),
-                    self.density.clone(),
-                    self.growth.clone(),
-                    self.labels.clone(),
-                );
+                let mut tile = Tile::new(self.labels.clone());
                 let tile_idx = row * self.city_size + col;
                 let tile_coords = (row, col);
 
@@ -542,6 +481,12 @@ impl City {
 
                 // Add the new tile to the tilelist
                 self.tilelist.insert((row, col), tile);
+
+                debug!(
+                    "Tile: {}",
+                    self.describe_tile((row, col))
+                        .expect("tile was just inserted")
+                );
             }
         }
     }
@@ -1225,5 +1170,55 @@ impl City {
         }
 
         output
+    }
+
+    fn describe_tile(&self, tile_coords: (usize, usize)) -> Option<String> {
+        let tile = self.tilelist.get(&tile_coords)?;
+
+        let terr = int_to_bitstring(*tile.terrain() as u32, 0);
+        let b_id = match &tile.building() {
+            Some(building) => format!("{:#04x}", building.building_id),
+            None => String::from("null"),
+        };
+
+        let sign_text = tile
+            .text()
+            .map(|text| format!(", Sign: {:?}", text))
+            .unwrap_or_default();
+
+        Some(format!(
+            r#"Tile at {:?}
+Altitude:
+    tunnel: {}, water: {}, unknown: {}, altitude: {}
+Terrain: {}
+Buildings:
+    id: {}, corners {}, zone: {}, underground: {}
+Text pointer: {}{}
+Flags: {:?}
+Minimap:
+    Traffic: {:?}, pollution: {:?}, value: {:?}, crime: {:?}, police: {:?}, fire: {:?}, density: {:?}, growth: {:?}
+"#,
+            tile.coordinates(),
+            tile.altitude_tunnel(),
+            tile.is_water(),
+            tile.altitude_unknown(),
+            tile.altitude(),
+            terr,
+            b_id,
+            tile.zone_corners(),
+            tile.zone(),
+            tile.underground(),
+            tile.text_pointer(),
+            sign_text,
+            tile.bit_flags(),
+            tile.traffic(self),
+            tile.pollution(self),
+            tile.value(self),
+            tile.crime(self),
+            tile.police(self),
+            tile.fire(self),
+            tile.density(self),
+            tile.growth(self)
+        ))
     }
 }
