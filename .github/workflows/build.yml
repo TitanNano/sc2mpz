@@ -24,7 +24,7 @@ jobs:
             vendor: pc
             env: '-msvc'
           - platform: darwin
-            os: macos-11
+            os: macos-14
             vendor: apple
 
     runs-on: ${{ matrix.os }}
@@ -37,7 +37,7 @@ jobs:
 
     steps:
     - name: checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up clang64
       if: contains(matrix.os, 'windows')
       run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
@@ -46,7 +46,7 @@ jobs:
       run: sudo apt install gcc-aarch64-linux-gnu
     - name: Add Build target
       run: rustup target add ${{ env.TARGET_TRIPLET }}
-    - uses: Swatinem/rust-cache@v1
+    - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ matrix.arch }}
     - name: Build Debug
@@ -58,7 +58,7 @@ jobs:
       run: |
         ${{ env.CARGO_BUILD}} ${{ env.TARGET_TRIPLET}} --release
     - name: Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: sc2mpz-${{ matrix.platform }}-${{ matrix.arch }}
-          path: target/${{ env.TARGET_TRIPLET }}/${{ inputs.release && 'release' || 'debug' }}/sc2mpz
+          path: target/${{ env.TARGET_TRIPLET }}/${{ inputs.release && 'release' || 'debug' }}/sc2mpz${{ matrix.platform == 'windows' && '.exe' || '' }}
