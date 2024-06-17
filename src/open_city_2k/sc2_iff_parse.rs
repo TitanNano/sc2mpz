@@ -2,6 +2,7 @@ use super::sc_util;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 struct Sc2FileHeader {
     type_id: String,
     data_size: usize,
@@ -76,7 +77,7 @@ impl ChunkList {
         };
     }
 
-    fn iter_compressed(self) -> CompressedIterator {
+    fn iter_compressed(&self) -> CompressedIterator {
         CompressedIterator {
             list: self,
             cursor: 0,
@@ -103,6 +104,7 @@ impl ChunkList {
         &self.pict
     }
 
+    #[allow(dead_code)]
     pub fn tile(&self) -> &[u8] {
         &self.tile
     }
@@ -184,12 +186,12 @@ impl ChunkList {
     }
 }
 
-struct CompressedIterator {
-    list: ChunkList,
+struct CompressedIterator<'a> {
+    list: &'a ChunkList,
     cursor: usize,
 }
 
-impl Iterator for CompressedIterator {
+impl<'a> Iterator for CompressedIterator<'a> {
     type Item = (String, Vec<u8>);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -482,12 +484,6 @@ pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkLis
 
     match input_type {
         "sc2" => {
-            uncompressed_chunk_list.text = input_file.text.clone();
-            uncompressed_chunk_list.cnam = input_file.cnam.clone();
-            uncompressed_chunk_list.altm = input_file.altm.clone();
-            uncompressed_chunk_list.scen = input_file.scen.clone();
-            uncompressed_chunk_list.pict = input_file.pict.clone();
-
             input_file
                 .iter_compressed()
                 .map(|(key, slice)| {
@@ -496,15 +492,21 @@ pub fn sc2_uncompress_input(input_file: ChunkList, input_type: &str) -> ChunkLis
                     (key, uncompress_rle(&slice))
                 })
                 .for_each(|(key, value)| uncompressed_chunk_list.set(&key, &value));
+
+            uncompressed_chunk_list.text = input_file.text;
+            uncompressed_chunk_list.cnam = input_file.cnam;
+            uncompressed_chunk_list.altm = input_file.altm;
+            uncompressed_chunk_list.scen = input_file.scen;
+            uncompressed_chunk_list.pict = input_file.pict;
         }
 
         "mif" => {
-            uncompressed_chunk_list.tile = input_file.tile.clone();
-
             input_file
                 .iter_compressed()
                 .map(|(key, slice)| (key, uncompress_rle(&slice)))
                 .for_each(|(key, value)| uncompressed_chunk_list.set(&key, &value));
+
+            uncompressed_chunk_list.tile = input_file.tile;
         }
 
         _ => panic!("unknown input type: {}", input_type),
@@ -542,7 +544,7 @@ fn uncompress_rle(encoded_data: &[u8]) -> Vec<u8> {
         match (byte, byte_count, next_byte_repeat) {
             (0..=0x7F, 0, _) => {
                 // In this case, byte is a count of the number of data bytes that follow.
-                byte_count = byte.to_owned();
+                byte.clone_into(&mut byte_count);
                 next_byte_repeat = false;
                 log::debug!("new byte count: {}", byte_count);
             }

@@ -5,6 +5,7 @@ use super::building::Building;
 use super::minimap::Minimap;
 use super::sc_util::int_to_bitstring;
 use serde::Serialize;
+use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Debug, Serialize)]
@@ -199,9 +200,10 @@ impl Tile {
     }
 
     fn get_text(&self) -> &str {
-        &self._label[(self.text_pointer as usize)]
+        &self._label[self.text_pointer as usize]
     }
 
+    #[allow(dead_code)]
     pub fn building(&self) -> &Option<Arc<Building>> {
         &self.building
     }
@@ -211,8 +213,8 @@ impl Tile {
     }
 }
 
-impl ToString for Tile {
-    fn to_string(&self) -> String {
+impl Display for Tile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let terr = int_to_bitstring(self.terrain as u32, 0);
         let b_id = if let Some(building) = &self.building {
             format!("{:#04x}", building.building_id)
@@ -226,7 +228,8 @@ impl ToString for Tile {
             String::from("")
         };
 
-        format!(
+        write!(
+            f,
             r#"Tile at {:?}
 Altitude:
     tunnel: {}, water: {}, unknown: {}, altitude: {}

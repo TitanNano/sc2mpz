@@ -141,32 +141,10 @@ struct BudgetItems {
 }
 
 trait EnumMap<K, V> {
-    fn get(&self, key: K) -> &V;
     fn get_mut(&mut self, key: K) -> &mut V;
 }
 
 impl EnumMap<SubBudgetIndices, SubBudget> for BudgetItems {
-    fn get(&self, key: SubBudgetIndices) -> &SubBudget {
-        match key {
-            SubBudgetIndices::Residential => &self.residential,
-            SubBudgetIndices::Commercial => &self.commercial,
-            SubBudgetIndices::Industrial => &self.industrial,
-            SubBudgetIndices::Ordinances => &self.ordinances,
-            SubBudgetIndices::Bonds => &self.bonds,
-            SubBudgetIndices::Police => &self.police,
-            SubBudgetIndices::Fire => &self.fire,
-            SubBudgetIndices::Health => &self.health,
-            SubBudgetIndices::Schools => &self.schools,
-            SubBudgetIndices::Colleges => &self.colleges,
-            SubBudgetIndices::Road => &self.road,
-            SubBudgetIndices::Hiway => &self.hiway,
-            SubBudgetIndices::Bridge => &self.bridge,
-            SubBudgetIndices::Rail => &self.rail,
-            SubBudgetIndices::Subway => &self.subway,
-            SubBudgetIndices::Tunnel => &self.tunnel,
-        }
-    }
-
     fn get_mut(&mut self, key: SubBudgetIndices) -> &mut SubBudget {
         match key {
             SubBudgetIndices::Residential => &mut self.residential,
@@ -255,7 +233,7 @@ impl Budget {
     }
 }
 
-fn serialize_array<S: Serializer, T>(value: T, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_array<S, T>(value: T, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
     T: IntoIterator,

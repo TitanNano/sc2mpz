@@ -26,6 +26,7 @@ use std::ops::Range;
  *      microsim: What microsim applies to this tile (if any?)
  *          Possible Values: city_hall, hospital, police, fire, museum, park, school, stadium, prison, college, zoo, statue, library, bus, rail, wind, hydro, marina, subway, plymouth, forest, darco, launch, dome, mansion.
  */
+#[allow(dead_code)]
 struct TileAttributes {
     name: &'static str,
     size: usize,
@@ -55,6 +56,7 @@ enum TileZone {
     Special,
 }
 
+#[allow(dead_code)]
 enum Microsim {
     None,
     CityHall,
@@ -4481,6 +4483,7 @@ pub const NETWORK_IDS: Range<u8> = 0x0E..(0x6B + 1);
 pub const HIGHWAY_2X2_IDS: Range<u8> = 0x61..(0x6B + 1);
 
 /// Tiles that can have a train sprite drawn on them:
+#[allow(dead_code)]
 pub fn train_tiles() -> Vec<u8> {
     TILE_DATA
         .entries()
@@ -4491,13 +4494,11 @@ pub fn train_tiles() -> Vec<u8> {
 
 // Section with nice functions to access the data contained here.
 
-/**
- * Gets the size of a building given the building's ID.
- * Args:
- *      building_id (int): id of the building.
- * Returns:
- *      Either 1, 2, 3 or 4 depending on how large the building is.
- */
+/// Gets the size of a building given the building's ID.
+/// Args:
+///     building_id (int): id of the building.
+/// Returns:
+///     Either 1, 2, 3 or 4 depending on how large the building is.
 pub fn get_size(building_id: &u8) -> Result<usize> {
     match TILE_DATA.get(building_id) {
         Some(building) => Ok(building.size),
@@ -4505,13 +4506,11 @@ pub fn get_size(building_id: &u8) -> Result<usize> {
     }
 }
 
-/**
- * Gets the name of a building given the building's ID.
- * Args:
- *      building_id (int): id of the building.
- * Returns:
- *      String containing the building's name.
- */
+/// Gets the name of a building given the building's ID.
+/// Args:
+///      building_id (int): id of the building.
+/// Returns:
+///      String containing the building's name.
 pub fn get_name(building_id: &u8) -> Result<&'static str> {
     match &TILE_DATA.get(building_id) {
         Some(building) => Ok(building.name),

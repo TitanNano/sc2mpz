@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::Serialize;
 
 /// Class to represent a thing stored in the XTHG segment.
@@ -38,9 +40,10 @@ impl Thing {
     }
 }
 
-impl ToString for Thing {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for Thing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "Thing with ID: {} at ({}, {}), rotations: {}, {}, data: {:?}",
             self.thing_id, self.x, self.y, self.rotation_1, self.rotation_2, self.data
         )

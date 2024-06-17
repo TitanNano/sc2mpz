@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::sc_util::parse_int32;
 use serde::Serialize;
 
@@ -54,9 +56,10 @@ impl Graph {
     }
 }
 
-impl ToString for Graph {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for Graph {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "Year:\n\t{:?}.\n10 Years:\n\t{:?}.\n100 Years:\n\t{:?}.\n",
             self.one_year, self.ten_years, self.hundred_years
         )

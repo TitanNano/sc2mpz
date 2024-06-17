@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::buildings;
 use serde::Serialize;
 
@@ -36,9 +38,10 @@ impl Building {
     }
 }
 
-impl ToString for Building {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for Building {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "Building: {} {:#04x} at {}, {}",
             self.name, self.building_id, self.tile_coords.0, self.tile_coords.1
         )

@@ -1,10 +1,11 @@
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 // Couldn't think of a better name, but this stores minimap info/simulation variables stores in:
 // XTRF, XPLT, XVAL, XCRM, XPLC, XFIR, XPOP, XROG.
-
+#[allow(dead_code)]
 const X64: [&str; 4] = ["XTRF", "XPLT", "XVAL", "XCRM"];
+#[allow(dead_code)]
 const X32: [&str; 4] = ["XPLC", "XFIR", "XPOP", "XROG"];
 
 #[derive(Clone, Debug, Serialize)]
@@ -35,31 +36,36 @@ impl Minimap {
         &self.data[&new_key]
     }
 
+    #[allow(dead_code)]
     pub fn set_scaled(&mut self, key: (usize, usize), item: u8) {
         let new_key = self.convert_xy(key);
 
         self.data.insert(new_key, item);
     }
 
+    #[allow(dead_code)]
     pub fn set_item(&mut self, key: (usize, usize), value: u8) {
         self.data.insert(key, value);
     }
 
+    #[allow(dead_code)]
     fn get_item(&self, key: (usize, usize)) -> &u8 {
         &self.data[&key]
     }
 }
 
-impl ToString for Minimap {
-    fn to_string(&self) -> String {
-        [self.name.clone()]
-            .into_iter()
-            .chain((0..self.size).map(|_| {
-                let items: Vec<_> = (0..self.size).into_iter().map(|y| y.to_string()).collect();
+impl Display for Minimap {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}", self.name)?;
 
-                items.join("")
-            }))
-            .collect::<Vec<_>>()
-            .join("\n")
+        for _ in 0..self.size {
+            for y in 0..self.size {
+                write!(f, "{y}")?;
+            }
+
+            writeln!(f)?;
+        }
+
+        Ok(())
     }
 }

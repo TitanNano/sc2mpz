@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::sc_util::{int_to_bitstring, parse_bitstring};
 use serde::Serialize;
 
@@ -25,6 +27,7 @@ pub struct BitFlags {
 }
 
 /// Returns the integer corresponding to the flags.
+#[allow(dead_code)]
 impl BitFlags {
     fn to_u32(&self) -> u32 {
         parse_bitstring(&self.to_string())
@@ -68,8 +71,8 @@ impl From<u8> for BitFlags {
 }
 
 /// Returns a binary string representing the bitflags.
-impl ToString for BitFlags {
-    fn to_string(&self) -> String {
+impl Display for BitFlags {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let attrs = [
             self.powerable,
             self.powered,
@@ -81,8 +84,14 @@ impl ToString for BitFlags {
             self.salt,
         ];
 
-        let bit_string: String = attrs.iter().map(|x| if *x { '1' } else { '0' }).collect();
+        for attr in attrs {
+            if attr {
+                write!(f, "1")?;
+            } else {
+                write!(f, "0")?;
+            }
+        }
 
-        bit_string
+        Ok(())
     }
 }
